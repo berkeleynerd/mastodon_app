@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+We are creating a flutter mastodon client. 
+
+We must always follow these rules :
+
+1. Always run the app for platform macos. 
+2. Always make sure all tests run before running the application.
+3. We will use only the built-in flutter testing framework.
+4. We will test only the API surfaces between modules and packages. We will not test inside them. 
+5. To test external services we will create dummy services to interact with. 
+6. We will strive to use the minimum number of 3rd-party packages. 
+7. We will strive for simplicity, clarity, security, and good test coverage.
+
+We will use Provider + ChangeNotifier for state management.
+We will use GoRouter as our routing package. 
+We will only need to support a single mastodon server and account.
+We will use the mastodon-api package for web auth and to communicate with the mastodon server. 
+We will not make modifications to the mastodon-api package but instead, if needed, will stop and consider any necessary modifications. 
+We will use a secure secret store provided by flutter matching the access pattern establishing by the mastodon-api package. 
+
+Let's determine an appropriate project structure for a Mastodon client. A well-organized structure makes the app easier to develop, test, and maintain.
+
+We will use the following structure adhering to these principles:
+
+- Separation of concerns
+- Easy testability (providers and services can be mocked)
+- Clear organization of features
+- Scalability for future enhancements
+
+```
+lib/
+├── main.dart
+├── app.dart (main app widget with routing)
+├── config/ (app configuration)
+│   └── routes.dart (GoRouter configuration)
+├── models/ (data models)
+│   ├── status.dart
+│   ├── account.dart
+│   └── notification.dart
+├── services/ (API and other services)
+│   ├── mastodon_service.dart (wrapper for mastodon-api)
+│   ├── auth_service.dart (authentication handling)
+│   └── storage_service.dart (secure storage)
+├── providers/ (ChangeNotifier implementations)
+│   ├── auth_provider.dart
+│   ├── timeline_provider.dart
+│   └── profile_provider.dart
+├── screens/ (UI screens)
+│   ├── login/
+│   ├── home/
+│   ├── profile/
+│   ├── notifications/
+│   └── compose/
+└── widgets/ (reusable widgets)
+    ├── status_card.dart
+    ├── user_card.dart
+    └── media_viewer.dart
+```
+
