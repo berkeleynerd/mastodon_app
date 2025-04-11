@@ -1,0 +1,18 @@
+{
+    "appName": "Saman",
+    "@appName": {
+        "description": "The name of the application"
+    },
+    "loginTitle": "Login to Mastodon",
+    "@loginTitle": {
+        "description": "Title shown on the login screen"
+    },
+    "loginButton": "Login",
+    "@loginButton": {
+        "description": "Text shown on the login button"
+    },
+    "welcomeMessage": "Welcome to Saman",
+    "@welcomeMessage": {
+        "description": "Welcome message shown on the login screen"
+    }
+} 

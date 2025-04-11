@@ -20,7 +20,7 @@ We will use GoRouter as our routing package.
 We will only need to support a single mastodon server and account.
 We will use the mastodon-api package for web auth and to communicate with the mastodon server. 
 We will not make modifications to the mastodon-api package but instead, if needed, will stop and consider any necessary modifications. 
-We will use a secure secret store provided by flutter matching the access pattern establishing by the mastodon-api package. 
+We will NOT use a secure secret store provided by flutter matching the access pattern establishing by the mastodon-api package. 
 
 Let's determine an appropriate project structure for a Mastodon client. A well-organized structure makes the app easier to develop, test, and maintain.
 
