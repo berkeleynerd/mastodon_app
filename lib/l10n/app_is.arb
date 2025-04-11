@@ -1,6 +1,9 @@
 {
     "appName": "Saman",
-    "loginTitle": "Skrá inn á Mastodon",
-    "loginButton": "Skrá inn",
-    "welcomeMessage": "Velkomin í Saman"
+    "loginTitle": "Skráðu þig inn á Mastodon",
+    "loginButton": "Skráðu þig inn með Mastodon",
+    "welcomeMessage": "Velkomin í Saman",
+    "appTitle": "Saman",
+    "logoutButton": "Útskráning",
+    "retryButton": "Reyna aftur"
 } 

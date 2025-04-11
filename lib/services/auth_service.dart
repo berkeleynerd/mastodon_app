@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-// Modified for development: using in-memory storage for development
-// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// Using SharedPreferences instead of flutter_secure_storage
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,23 +10,73 @@ class AuthService {
   static const String _tokenKey = 'mastodon_token';
   static const String _clientIdKey = 'client_id';
   static const String _clientSecretKey = 'client_secret';
-  // Modified for development: using in-memory storage for development
-  // final _storage = const FlutterSecureStorage();
   
-  // In-memory storage for development
-  final Map<String, String> _devStorage = {};
+  // Method to get the access token
+  Future<String?> getAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
+  }
+  
+  // Method to check if the user is authenticated
+  Future<bool> isAuthenticated() async {
+    final token = await getAccessToken();
+    print('Auth check - token exists: ${token != null}');
+    if (token == null) return false;
+    
+    try {
+      // Verify the token is valid by making a request to the API
+      print('Verifying token validity...');
+      final response = await _authorizedGet('/api/v1/accounts/verify_credentials');
+      print('Token verification response: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Token validation error: $e');
+      return false;
+    }
+  }
+  
+  // Method to fetch the user's account information
+  Future<Map<String, dynamic>> fetchUserAccount() async {
+    print('Fetching user account...');
+    final response = await _authorizedGet('/api/v1/accounts/verify_credentials');
+    
+    print('User account response: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      throw 'Failed to fetch account: ${response.body}';
+    }
+    
+    final userData = jsonDecode(response.body);
+    print('User data retrieved: ${userData['username']}');
+    return userData;
+  }
+  
+  // Helper method for authorized GET requests
+  Future<http.Response> _authorizedGet(String path) async {
+    final token = await getAccessToken();
+    if (token == null) {
+      throw 'Not authenticated';
+    }
+    
+    return http.get(
+      Uri.parse('$serverUrl$path'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 10), onTimeout: () {
+      throw 'Connection timeout. Please check your network connection.';
+    });
+  }
   
   Future<void> authenticate() async {
     try {
       // First register the application if we haven't already
-      final clientId = _devStorage[_clientIdKey];
-      final clientSecret = _devStorage[_clientSecretKey];
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getString(_clientIdKey);
+      final clientSecret = prefs.getString(_clientSecretKey);
       
       if (clientId == null || clientSecret == null) {
         await _registerApp();
       }
       
-      final storedClientId = _devStorage[_clientIdKey];
+      final storedClientId = prefs.getString(_clientIdKey);
       if (storedClientId == null) {
         throw 'Failed to register application';
       }
@@ -71,11 +121,9 @@ class AuthService {
       }
 
       final data = jsonDecode(response.body);
-      // Modified for development: using in-memory storage for development
-      // await _storage.write(key: _clientIdKey, value: data['client_id']);
-      // await _storage.write(key: _clientSecretKey, value: data['client_secret']);
-      _devStorage[_clientIdKey] = data['client_id'];
-      _devStorage[_clientSecretKey] = data['client_secret'];
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_clientIdKey, data['client_id']);
+      await prefs.setString(_clientSecretKey, data['client_secret']);
       
       print('Successfully registered app with client ID: ${data['client_id']}');
     } on SocketException catch (e) {
@@ -91,8 +139,9 @@ class AuthService {
   Future<void> handleAuthorizationCode(String code) async {
     try {
       print('Exchanging authorization code for token');
-      final clientId = _devStorage[_clientIdKey];
-      final clientSecret = _devStorage[_clientSecretKey];
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getString(_clientIdKey);
+      final clientSecret = prefs.getString(_clientSecretKey);
       
       if (clientId == null || clientSecret == null) {
         throw 'Missing client credentials';
@@ -118,7 +167,7 @@ class AuthService {
       
       final data = jsonDecode(response.body);
       // Store the access token
-      _devStorage[_tokenKey] = data['access_token'];
+      await prefs.setString(_tokenKey, data['access_token']);
       print('Successfully obtained access token');
     } catch (e) {
       print('Handle authorization code error: $e');
@@ -126,20 +175,12 @@ class AuthService {
     }
   }
 
-  Future<bool> isAuthenticated() async {
-    // Modified for development: using in-memory storage for development
-    // final token = await _storage.read(key: _tokenKey);
-    final token = _devStorage[_tokenKey];
-    return token != null;
-  }
-
   Future<void> logout() async {
-    // Modified for development: using in-memory storage for development
-    // await _storage.delete(key: _tokenKey);
-    // await _storage.delete(key: _clientIdKey);
-    // await _storage.delete(key: _clientSecretKey);
-    _devStorage.remove(_tokenKey);
-    _devStorage.remove(_clientIdKey);
-    _devStorage.remove(_clientSecretKey);
+    print('Logging out and clearing all credentials');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    // Optionally, also clear app credentials if you want to force re-registration
+    // await prefs.remove(_clientIdKey);
+    // await prefs.remove(_clientSecretKey);
   }
 } 

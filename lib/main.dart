@@ -6,6 +6,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'services/auth_service.dart';
 import 'screens/login/login_screen.dart';
+import 'screens/home/home_screen.dart';
 
 // StreamController to handle OAuth redirects
 final StreamController<String> _redirectStreamController = StreamController<String>.broadcast();
@@ -49,10 +50,43 @@ void main() {
   runApp(MyApp(authService: authService));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AuthService authService;
   
   const MyApp({Key? key, required this.authService}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isLoading = true;
+  bool _isAuthenticated = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthentication();
+    
+    // Listen for authentication changes from redirect
+    redirectStream.listen((url) async {
+      final uri = Uri.parse(url);
+      if (uri.scheme == 'saman' && uri.host == 'oauth') {
+        await Future.delayed(const Duration(seconds: 1));
+        _checkAuthentication();
+      }
+    });
+  }
+  
+  Future<void> _checkAuthentication() async {
+    print('Checking authentication status...');
+    final isAuth = await widget.authService.isAuthenticated();
+    print('Authentication check result: $isAuth');
+    setState(() {
+      _isAuthenticated = isAuth;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +107,15 @@ class MyApp extends StatelessWidget {
         Locale('pl'), // Polish
         Locale('is'), // Icelandic
       ],
-      home: LoginScreen(authService: authService),
+      home: _isLoading
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : _isAuthenticated
+              ? HomeScreen(authService: widget.authService)
+              : LoginScreen(authService: widget.authService),
+      routes: {
+        '/login': (context) => LoginScreen(authService: widget.authService),
+        '/home': (context) => HomeScreen(authService: widget.authService),
+      },
     );
   }
 }
